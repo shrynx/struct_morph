@@ -1,15 +1,17 @@
 [package]
 name = "struct_morph"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2021"
 license = "MIT"
-description = "a (proc) macro for morphing one struct into another."
+description = "macro for morphing one struct into another."
 authors = ["shrynx <shriyansbhatnagar@gmail.com>"]
+repository = "https://github.com/shrynx/struct_morph"
+readme = "README.md"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0", features = ["full"] }
+syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
 proc-macro2 = "1.0"
