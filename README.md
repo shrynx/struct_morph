@@ -11,7 +11,7 @@ cargo add struct_morph
 or manually
 
 ```toml
-struct_morph = "0.5"
+struct_morph = "0.6"
 ```
 
 ## Usage
@@ -50,7 +50,8 @@ use struct_morph::{morph, morph_field};
 #[morph(ProductRow)]
 struct ProductInfo {
     id: i32,
-    name: String,
+    #[morph_field(select = name)]
+    title: String,
     description: String,
     #[morph_field(transform = "is_available")]
     is_available: bool,
@@ -86,3 +87,19 @@ let product_info: ProductInfo = ProductInfo::from(product_row);
 
 This will copy the values for fields with same name (and type) and for the rest one can provide customer transform functions.
 It does so by implementing a `From` trait for the source and target struct.
+
+There are 2 types field modifiers 
+
+- transform
+
+```rust
+#[morph_field(transform = "transform_func")]
+```
+this takes an transform function which takes &SourceStruct as a param and returns the correct type
+
+- select
+
+```rust
+#[morph_field(select = source_field)]
+```
+this takes a source field to replace the value for the field

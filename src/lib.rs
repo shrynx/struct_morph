@@ -12,12 +12,13 @@
 //! #   base_price: i32,
 //! #   discount: i32
 //! # }
-//! # 
+//! #
 //! # #[derive(Debug)]
 //! # #[morph(ProductRow)]
 //! # struct ProductInfo {
 //! #   id: i32,
-//! #   name: String,
+//! #   #[morph_field(select = name)]
+//! #   title: String,
 //! #   description: String,
 //! #   #[morph_field(transform = "is_available")]
 //! #   is_available: bool,
@@ -42,8 +43,8 @@
 //! #     base_price: 50,
 //! #     discount: 10,
 //! #   };
-//! # 
-//! #   let product_info: ProductInfo = ProductInfo::from(product_row.clone()); 
+//! #
+//! #   let product_info: ProductInfo = ProductInfo::from(product_row.clone());
 //! #   
 //! #   println!("{:?}", product_row);
 //! #   println!("{:?}", product_info);
@@ -61,24 +62,24 @@ use syn::{
     parse_macro_input, Ident, ItemStruct, LitStr, Token,
 };
 
-struct MorphFieldArgs {
-    transform_function_name: LitStr,
+enum MorphFieldArgs {
+    TransformFunction(LitStr),
+    SelectField(Ident),
 }
 
 impl Parse for MorphFieldArgs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let transform_keyword: Ident = input.parse()?;
+        let morph_keyword: Ident = input.parse()?;
         let _eq_token: Token![=] = input.parse()?;
 
-        if transform_keyword != "transform" {
-            return Err(syn::Error::new_spanned(
-                transform_keyword,
-                "Expected 'transform' followed by function name",
-            ));
+        match morph_keyword {
+            t if t == "transform" => Ok(MorphFieldArgs::TransformFunction(input.parse()?)),
+            t if t == "select" => Ok(MorphFieldArgs::SelectField(input.parse()?)),
+            _ => Err(syn::Error::new_spanned(
+                morph_keyword,
+                "Expected either 'transform' or 'select'",
+            )),
         }
-        Ok(Self {
-            transform_function_name: input.parse()?,
-        })
     }
 }
 
@@ -98,17 +99,19 @@ pub fn morph(attr: TokenStream, item: TokenStream) -> TokenStream {
         .iter()
         .map(|f| {
             let field_name = &f.ident;
-            let transform_function = f.attrs.iter().find_map(|attr| {
+            let morph_field_args = f.attrs.iter().find_map(|attr| {
                 attr.path().is_ident("morph_field").then(|| {
                     let args: MorphFieldArgs = attr.parse_args().unwrap();
-                    args.transform_function_name.value()
+                    args
                 })
             });
-
-            match transform_function {
-                Some(func) => {
-                    let func_ident = Ident::new(&func, proc_macro2::Span::call_site());
+            match morph_field_args {
+                Some(MorphFieldArgs::TransformFunction(func)) => {
+                    let func_ident = Ident::new(&func.value(), proc_macro2::Span::call_site());
                     quote! { #field_name: #func_ident(&source) }
+                }
+                Some(MorphFieldArgs::SelectField(source_field)) => {
+                    quote! { #field_name: source.#source_field.clone() }
                 }
                 None => quote! { #field_name: source.#field_name.clone() },
             }

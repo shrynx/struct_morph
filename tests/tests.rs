@@ -8,6 +8,17 @@ struct Foo {
     d: (String, String),
 }
 
+impl Foo {
+    fn sample() -> Self {
+        Foo {
+            a: 10,
+            b: "Hello".to_string(),
+            c: vec![1, 3, 4],
+            d: ("Good".to_string(), "Bye".to_string()),
+        }
+    }
+}
+
 #[morph(Foo)]
 struct Bar {
     a: u16,
@@ -17,12 +28,7 @@ struct Bar {
 
 #[test]
 fn simple() {
-    let my_foo: Foo = Foo {
-        a: 10,
-        b: "Hello".to_string(),
-        c: vec![1, 3, 4],
-        d: ("Good".to_string(), "Bye".to_string()),
-    };
+    let my_foo: Foo = Foo::sample();
 
     let auto_bar: Bar = Bar::from(my_foo.clone());
 
@@ -50,13 +56,8 @@ fn foo_d_sec_len(value: &Foo) -> usize {
 }
 
 #[test]
-fn with_field_transform() {
-    let my_foo: Foo = Foo {
-        a: 10,
-        b: "Hello".to_string(),
-        c: vec![1, 3, 4],
-        d: ("Good".to_string(), "Bye".to_string()),
-    };
+fn with_transform() {
+    let my_foo: Foo = Foo::sample();
 
     let auto_baz: Baz = Baz::from(my_foo.clone());
 
@@ -64,4 +65,21 @@ fn with_field_transform() {
     assert_eq!(my_foo.c, auto_baz.c);
     assert_eq!(foo_d_first(&my_foo), auto_baz.e);
     assert_eq!(foo_d_sec_len(&my_foo), auto_baz.f);
+}
+
+#[morph(Foo)]
+struct Qux {
+    c: Vec<u32>,
+    #[morph_field(select = a)]
+    f: u16,
+}
+
+#[test]
+fn with_select() {
+    let my_foo: Foo = Foo::sample();
+
+    let auto_qux: Qux = Qux::from(my_foo.clone());
+
+    assert_eq!(my_foo.c, auto_qux.c);
+    assert_eq!(my_foo.a, auto_qux.f);
 }
