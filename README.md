@@ -53,9 +53,9 @@ struct ProductInfo {
     #[morph_field(select = name)]
     title: String,
     description: String,
-    #[morph_field(transform = "is_available")]
+    #[morph_field(transform = "available_count")]
     is_available: bool,
-    #[morph_field(transform = "net_price")]
+    #[morph_field(transform = "base_price")]
     price: i32,
 }
 
